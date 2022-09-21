@@ -1,0 +1,803 @@
+---
+title: "Feminism"
+author: "Saumya Pandey"
+date: '2022-09-20'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+```{r, include=FALSE}
+
+#These were libraries imported. Please install them using the install.packages() function if it hasn't been installed yet. Otherwise, there will be an error.
+library("syuzhet")
+library("ggplot2")
+library("reshape2")
+library("topicmodels")
+library("tidytext")
+library("tidyverse")
+library("tm")
+library("wordcloud")
+
+#Read in the dataset. Inside the read.csv() function, please put in the directory in which where you have put in the data folder. Otherwise, there will be an error.
+philosophy_data <- read.csv('philosophy_data 2.csv')
+
+#Subset the dataset to only include the data related to the school of feminism
+philosophy_data_feminism <- philosophy_data[philosophy_data$school== "feminism",]
+
+#Shows Wollstonecraft, Beauvoir, and Davis as the authors
+unique(philosophy_data_feminism$author)
+
+#Create subsets within the school of feminism for each author
+philosophy_data_feminism_wollstone <- philosophy_data_feminism[philosophy_data_feminism$author == "Wollstonecraft",]
+philosophy_data_feminism_beauvoir <- philosophy_data_feminism[philosophy_data_feminism$author == "Beauvoir",]
+philosophy_data_feminism_davis <- philosophy_data_feminism[philosophy_data_feminism$author == "Davis",]
+
+```
+
+In 2022, the topic, feminism, creates divides. There is one side of people (including females) that don't think of themselves as feminists. Their reasons include that it is a man-hating group that exists solely for the benefit of women. They believe that the feminist-group believes in them being superior than males and that they deserve more. While, there are some feminists who certainly believe in that and preach that, for the remainder of the people believing in feminism, it is further from the truth. For them, feminism is a movement to support them in getting the same opportunities as men - whether it be in terms of career, salary, etc. So, as just described, there is a lot of controversies and mixed opinions surrounding feminism at the present. This is what feminism is like in 2022. But what was it like in the earlier years and centuries? What were people striving for back then? What were the issues and concerns raised at that time? 
+
+The answers to these questions can be found through a data set that was compiled for the Philosophy Data Project. The data set contains 51 texts written by different authors. It contains attributes like "school" (categories include rationalism, feminism, empiricism, etc.), "author", "title", "sentence_spacy" (sentences from a text), "original_publication_date", etc. By looking at the data set, there are three authors that fall under the "school" of feminism. The authors were Mary Wollstonecraft, Simone de Beauvoir and Angela Davis. The data set includes one book for each author. Mary Wollstonecraft wrote the book called "Vindication of the Rights of Woman" in 1792. Simone de Beauvoir wrote "The Second Sex" in 1949 and Angela Davis wrote the book "Women, Race, And Class" in 1981. Through data analysis techniques on this subset of the entire data set, I was able to get a sense of what feminism was about earlier through the general ideas that were presented in each text, the way the authors expressed themselves in the text, etc.
+
+
+
+
+
+
+
+
+The first question is what were the emotions of the author in a text? Did they express with positive or negative sentiments? If negative, then what kind of emotions were expressed? Did different authors tend to have more negative (or positive) sentiments than other authors? It was of interest of me to gauge the overall sentiment of the author.
+
+Sentiment analysis accomplishes this. Here, I used the get_nrc_sentiment function on each text. This function uses the NRC sentiment dictionary to calculate the presence of eight different emotions (anger, fear, joy, anticipation, etc.), as well as a positive and negative sentiment valence. To showcase the emotions expressed by each author, as well as the positive and negative sentiment valences, I made some visualizations as well which are down below.
+
+To get more detailed steps of the implementation, please do take the time to read my comments in the code which is in the RMD file.
+
+```{r, include=FALSE}
+#PLEASE RUN THE CODE. This could take a bit of time to run due to the amount of sentences present in the text and the get_nrc_sentiment function was used on each sentence.
+
+
+
+
+
+
+#Implementation details down below:
+
+#Using the get_nrc_sentiment function which uses the NRC sentiment dictionary to calculate the presence of eight different emotions, as well as, the positive and negative sentiment valence.
+
+#First, I used the get_nrc_sentiment function on the first sentence in author Mary Wollstonecraft's text. All the sentences can be found in the column attribute called "sentence_spacy" which is a character vector that includes a sentence in every row. After using the function on the first sentence, this returned a data frame with the calculation of the presence it found of emotions like joy, disgust, etc. 
+
+#Afterwards, I made a for loop which ran from the second sentence to the last sentence and the same process was repeated for all of these sentences. Each time, the function was applied on a sentence and the output would be a data frame with the numerical scores assigned to each sentiment, it would be combined to the original data frame by row. 
+
+#For example, in the for loop, when the function is ran on the second sentence and it returned a data frame with the results, it would be combined with the first sentence's data frame. When the function is ran on the third sentence and it returned a data frame with the results, it would be combined with the data frame that contains both the results of the first and second sentence. This process keeps on repeating till the last sentence.
+
+#This is for the analysis related to Mary Wollstonecraft's text.
+wollston_sentiments_df <- get_nrc_sentiment(philosophy_data_feminism_wollstone$sentence_spacy[1])
+
+for (i in 2:length(philosophy_data_feminism_wollstone$sentence_spacy)) {
+  sentiments_at_i <- get_nrc_sentiment(philosophy_data_feminism_wollstone$sentence_spacy[i])
+  wollston_sentiments_df <- rbind(wollston_sentiments_df, sentiments_at_i)
+}
+
+#This process returns a data frame, in this case, wollstone_sentiments_df, which has all of the sentences' results of the presence of emotions, as well as, the positive and negative sentiment valences. I decided to use the sign function to make the values more interpretable and easier in the calculation of the overall score for each emotion. 1 represents that presence of that particular emotion was detected in the sentence and 0 means that presence of that specific emotion was not detected in the sentence.
+wollstone_sentiments_df <- sign(wollston_sentiments_df)
+
+#The same process that is seen above is repeated for the next two authors.
+#This is for the analysis related to Simone de Beauvoir's text.
+beauvoir_sentiments_df <- get_nrc_sentiment(philosophy_data_feminism_beauvoir$sentence_spacy[1])
+
+for (i in 2:length(philosophy_data_feminism_beauvoir$sentence_spacy)) {
+  sentiments_at_i <- get_nrc_sentiment(philosophy_data_feminism_beauvoir$sentence_spacy[i])
+  beauvoir_sentiments_df <- rbind(beauvoir_sentiments_df, sentiments_at_i)
+}
+beauvoir_sentiments_df <- sign(beauvoir_sentiments_df)
+
+#This is for the analysis related to Angela Davis's text.
+davis_sentiments_df <- get_nrc_sentiment(philosophy_data_feminism_davis$sentence_spacy[1])
+
+for (i in 2:length(philosophy_data_feminism_davis$sentence_spacy)) {
+  sentiments_at_i <- get_nrc_sentiment(philosophy_data_feminism_davis$sentence_spacy[i])
+  davis_sentiments_df <- rbind(davis_sentiments_df, sentiments_at_i)
+}
+davis_sentiments_df <- sign(davis_sentiments_df)
+
+
+
+#I then created a data set called, data_sentiments_authors, which would include the authors and the summation of each emotion in the data set that was returned in the above method. This was done to see the overall score of each emotion in the text. These will also help me in creating visualizations to showcase what emotions were expressed more in each text.
+data_sentiments_authors <- matrix(nrow = 3, ncol = 8)
+colnames(data_sentiments_authors) <- c("anger", "disgust", "fear", "sadness", "joy", "trust", "surprise", "anticipation")
+rownames(data_sentiments_authors) <- c("Wollstonecraft", "Beauvoir", "Davis")
+
+data_sentiments_authors["Wollstonecraft",] <- c(sum(wollston_sentiments_df$anger),  
+                                                sum(wollston_sentiments_df$disgust),
+                                                sum(wollston_sentiments_df$fear),
+                                                sum(wollston_sentiments_df$sadness),
+                                                sum(wollston_sentiments_df$joy),
+                                                sum(wollston_sentiments_df$trust), 
+                                                sum(wollston_sentiments_df$surprise),
+                                                sum(wollston_sentiments_df$anticipation)
+)
+
+data_sentiments_authors["Beauvoir",] <- c(sum(beauvoir_sentiments_df$anger),
+                                          sum(beauvoir_sentiments_df$disgust),
+                                          sum(beauvoir_sentiments_df$fear),
+                                          sum(beauvoir_sentiments_df$sadness),
+                                          sum(beauvoir_sentiments_df$joy),
+                                          sum(beauvoir_sentiments_df$trust), 
+                                          sum(beauvoir_sentiments_df$surprise),
+                                          sum(beauvoir_sentiments_df$anticipation)
+)
+
+data_sentiments_authors["Davis",] <- c(sum(davis_sentiments_df$anger),
+                                       sum(davis_sentiments_df$disgust),
+                                       sum(davis_sentiments_df$fear),
+                                       sum(davis_sentiments_df$sadness),
+                                       sum(davis_sentiments_df$joy),
+                                       sum(davis_sentiments_df$trust), 
+                                       sum(davis_sentiments_df$surprise),
+                                       sum(davis_sentiments_df$anticipation)
+)
+
+#I also created a data set called, data_sentiments_authors_NP, which would include the authors and the summation of positive and negative sentiment valences found in the data set that was returned in the above method. This would help in creating visualizations to compare and see whether positive or negative sentiments were present more and at what margin.
+
+data_sentiments_authors_NP <- matrix(nrow = 3, ncol = 2)
+colnames(data_sentiments_authors_NP) <- c("Positive", "Negative")
+rownames(data_sentiments_authors_NP) <- c("Wollstonecraft", "Beauvoir", "Davis")
+
+data_sentiments_authors_NP["Wollstonecraft",] <- c(sum(wollston_sentiments_df$positive),  
+                                                sum(wollston_sentiments_df$negative)
+                                              
+)
+
+data_sentiments_authors_NP["Beauvoir",] <- c(sum(beauvoir_sentiments_df$positive),
+                                          sum(beauvoir_sentiments_df$negative)
+                                          
+)
+
+data_sentiments_authors_NP["Davis",] <- c(sum(davis_sentiments_df$positive),
+                                       sum(davis_sentiments_df$negative)
+                                  
+)
+
+#I had to reshape the data in order to create the visualizations I wanted.
+data_sentiments_authors_final <- melt(data_sentiments_authors)
+names(data_sentiments_authors_final) <- c("Author", "Type of Emotion", "Frequency")
+
+data_sentiments_NP_final <- melt(data_sentiments_authors_NP)
+names(data_sentiments_NP_final) <- c("Author", "NP", "Frequency")
+
+```
+
+
+
+```{r, echo=FALSE }
+#Histogram of the Positive vs. Negative Sentiments Expressed from each Author
+ggplot(data_sentiments_NP_final, 
+       aes(x=data_sentiments_NP_final$Author,
+           y=data_sentiments_NP_final$Frequency, fill=factor(data_sentiments_NP_final$NP))) + 
+            xlab("Authors") + ylab ("Frequency of Sentiment") +
+              geom_bar(stat="identity", position="dodge", colour="black") +
+                scale_fill_brewer(type="qual", palette="RdBu") +
+                guides(fill=guide_legend(title = "Positive vs.Negative Sentiments")) +
+                ggtitle("Positive vs. Negative Sentiments Expressed from each Author")
+
+```
+
+
+```{r, echo=FALSE}
+#Chart of Types of Emotions Expressed by each Author
+ggplot(data_sentiments_authors_final, 
+       aes(x=data_sentiments_authors_final$Author, y=data_sentiments_authors_final$Frequency,
+           fill=factor(data_sentiments_authors_final$`Type of Emotion`))) +
+  xlab("Authors") + ylab ("Frequency of Emotion") +
+  geom_bar(stat="identity", position="dodge", colour="black") +
+  scale_fill_brewer(type="qual", palette="RdBu") +
+  guides(fill=guide_legend(title = "Types of Emotions")) +
+  ggtitle("Chart of Types of Emotions Expressed by each Author")
+
+```
+Looking at the first plot, it can be seen the amount of positive and negative sentiments for Beauvoir are a lot higher than the other authors. The reason is that there are a lot more sentences present in Beauvoir's case than there are for the remaining two authors. Looking at Beauvoir's example in the first plot, it can be seen that there are a lot more positive sentiments expressed. However, the margin between negative and positive sentiments is not too great which means that there were some serious topics discussed as well that could have led to negative sentiments. Looking at the first plot for Wollstonecraft's instance, it can be seen that positive sentiments are hugely expressed by the author. The margin between negative and positive sentiments is also wide, compared to Beauvoir's case. Looking at the first plot for Davis's case, this was an interesting one. The margin is quite low between negative and positive sentiments expressed which means the level of positive and negative sentiments expressed was almost the same. It means that there were several serious topics discussed in the text which could have led to negative sentiments. To get a better idea of what kind of negative and positive sentiments were expressed, the second plot can be looked at. In Wollstonecraft's case, since positive sentiments are expressed hugely, the top positive emotions that are expressed are trust and joy. In Beauvoir's case, the margin between negative and positive sentiments is not by a wide margin. So, the top positive emotions expressed were anticipation and trust while the top negative emotions that were expressed were fear and sadness. For Davis's case, the margin between negative sentiments and positive sentiments is even lower. Here, the top negative emotions expressed were fear and sadness while trust and anticipation were the top positive emotions expressed.
+
+So through this analysis, I can conclude that the text written by Wollstonecraft was expressed with a lot more positive sentiments (trust and joy) than other texts since the margin between positive and negative sentiments was quite huge compared to the margins of the other texts. I believe Davis's text has more negative sentiments (fear and sadness) than the rest of the authors since again in this case, the margin between the positive and negative sentiments is very very low compared to the margins of the other texts. 
+
+
+
+
+Davis's case is what led to thinking what ideas was she talking about that led to negative sentiments being expressed - and that too, at a frequency where almost the positive and negative sentiments being expressed is equal? What ideas was she discussing that led to sadness, anger? The same type of questions can be asked regarding the other two authors. What is so different in the ideas of Wollstonecraft vs. the rest of the authors that makes her express positive sentiments hugely and that too by a wide margin?
+This leads to the second analysis which is finding out the general and popular ideas behind the text. One approach is to find the words with the most occurrences in the text. A word cloud is included for visualization purposes.
+
+```{r, echo=FALSE}
+#RUN CODE.
+
+
+
+#Implementation details down below.
+
+#Summarizing a text and trying to make sense of the popular or trending topics by getting the words with the most occurrences and also creating a word cloud for visualization purposes.
+
+#Analysis of Mary Wollstonecraft's text
+
+#Data Cleaning Steps
+wollstone <- Corpus(VectorSource(philosophy_data_feminism_wollstone$sentence_spacy)) #the vectorsource function treats each sentence as a document and from there, a corpus is created which is the collection of these documents/sentences.
+wollstone <- tm_map(wollstone, content_transformer(tolower)) #lowercase
+wollstone <- tm_map(wollstone, removeNumbers) #strip digits
+wollstone <- tm_map(wollstone, removeWords, stopwords("english")) #remove stopwords
+
+#Custom Stopword list included too - remove those terms in the list
+wollstone <- tm_map(wollstone, removeWords, c("one", "womens", "woman", "man","like", "can", "must", 
+                                          "will", "make", "may", "the", "for", "and", "that", "are", 
+                                          "have", "which", "they", "for", "this", "thing", "their",
+                                          "our", "from", "all", "them", "his", "her",
+                                          "other", "these", 'their', "theirs", "who", "with",
+                                          "where", "why", "what", "more",
+                                          "because", "but", "would", "even", "without", "though",  
+                                          "also", "well", "still", "many", "thus", "said", "often", 
+                                          "just", "see", "much", "always", "less", "sometimes",
+                                          "every","become", "becomes", "sometimes", "two", "till", 
+                                          "let", "whilst", "yet", "might", "whose", "ever", "made", 
+                                          "little", "thy", "yesterday", "tuesday", "wednesday", 
+                                          "notwithstanding", "get", "monday")) 
+wollstone <- tm_map(wollstone, removePunctuation) #remove punctuation
+wollstone <- tm_map(wollstone, stripWhitespace) #remove space
+
+#I found the top occurrences by first creating a matrix from the TermDocumentMatrix. Afterwards, I calculated the summation of the row values of the matrix which signify the amount of occurrence of the term in each document/sentence. Afterwards, I sorted those summation values in decreasing order and got the top 35 words with the most occurrences.
+
+wollstone_tdm <- TermDocumentMatrix(wollstone)
+wollstone_tdm_matrix <- as.matrix(wollstone_tdm)
+wollstone_tdm_matrix_rowsums <- rowSums(wollstone_tdm_matrix)
+wollstone_tdm_matrix_sorted <- sort(wollstone_tdm_matrix_rowsums,decreasing=TRUE)
+wollstone_tdm_df <- data.frame(term =  names(wollstone_tdm_matrix_sorted),count=wollstone_tdm_matrix_sorted)
+
+#Histogram of the top 35 terms with the most occurrences
+wollstone_tdm_df_35 <- head(wollstone_tdm_df, 35)
+ggplot(data = wollstone_tdm_df_35, 
+       aes(x = wollstone_tdm_df_35$term, y = wollstone_tdm_df_35$count)) +
+       geom_bar(stat='identity') + 
+       coord_flip() + theme_bw() +
+       xlab("Frequency") + ylab("Term")
+
+#Word Cloud for Visualization purposes
+wordcloud(words = wollstone_tdm_df$term, freq = wollstone_tdm_df$count, min.freq = 5,
+          max.words=100, random.order=FALSE)
+
+```
+
+As it can be seen through the frequency plot and word cloud, besides from women and men, terms like reason, respect, power, society, children, knowledge and education are at a high frequency. To conclude from this output, some main ideas or themes of the book could be of education and knowledge for women, role of women towards her children, in society, etc.
+
+
+
+```{r, echo=FALSE}
+#RUN THIS CODE.
+
+
+#Implementation details down below:
+
+
+#Summarizing a text and trying to make sense of the popular or trending topics by getting the top words with the most occurences and also creating a word cloud for visualization purposes.
+
+#Analysis of Simone de Beauvoir's text
+
+#Data Cleaning Steps
+beauvoir <- Corpus(VectorSource(philosophy_data_feminism_beauvoir$sentence_spacy)) #the vectorsource function treats each sentence as a document and from there, a corpus is created which is the collection of these documents/sentences.
+beauvoir <- tm_map(beauvoir, content_transformer(tolower)) #lowercase
+beauvoir <- tm_map(beauvoir, removeNumbers) #stripdigits
+beauvoir <- tm_map(beauvoir, removeWords, stopwords("english")) #stopword list
+#Create a custom stopword list - remove those terms in the list
+beauvoir <- tm_map(beauvoir, removeWords, c("one", "womens", "womans", "women", "male", "female", "like", "can", "must", 
+                                          "will", "make", "may", "the", "for", "men", "and", "that", "are", 
+                                          "have", "which", "they", "for", "this", "thing", "their",
+                                          "our", "from", "all", "them", "his", "her",
+                                          "other", "these", 'their', "theirs", "who", "with",
+                                          "where", "why", "what", "more",
+                                          "because", "but", "would", "even", "without", "though",  
+                                          "also", "well", "still", "many", "thus", "said", "often", 
+                                          "just", "see", "much", "always", "less", "sometimes",
+                                          "every","become", "becomes", "sometimes", "two", "till", 
+                                          "let", "whilst", "yet", "might", "whose", "ever", "made", 
+                                          "little", "thy", "yesterday", "tuesday", "wednesday", 
+                                          "notwithstanding", "get", "monday")) 
+beauvoir <- tm_map(beauvoir, removePunctuation) #remove punctuation
+beauvoir <- tm_map(beauvoir, stripWhitespace) #remove space
+beauvoir <- tm_map(beauvoir, stemDocument) #reduce words to the root form
+
+
+#Same process as Wollstonecraft's. I found the top occurrences by first creating a matrix from the TermDocumentMatrix. Afterwards, I calculated the summation of the row values of the matrix which signify the amount of occurrence of the term in each document/sentence. Afterwards, I sorted those summation values in decreasing order and got the top 35 words with the most occurrences.
+beauvoir_tdm <- TermDocumentMatrix(beauvoir)
+beauvoir_tdm_matrix <- as.matrix(beauvoir_tdm)
+beauvoir_tdm_matrix_rowsums <- rowSums(beauvoir_tdm_matrix)
+beauvoir_tdm_matrix_sorted <- sort(beauvoir_tdm_matrix_rowsums, decreasing=TRUE)
+beauvoir_tdm_df <- data.frame(term = names(beauvoir_tdm_matrix_sorted),count=beauvoir_tdm_matrix_sorted)
+
+#Histogram of the top 35 terms with the most occurrences
+beauvoir_tdm_df_35 <- head(beauvoir_tdm_df, 35)
+ggplot(data = beauvoir_tdm_df_35, 
+       aes(x = beauvoir_tdm_df_35$term, 
+           y = beauvoir_tdm_df_35$count)) +
+  geom_bar(stat='identity') + coord_flip() + theme_bw() + xlab("Frequency") + ylab("Term")
+
+#Word Cloud for Visualization purposes
+wordcloud(words = beauvoir_tdm_df$term, freq = beauvoir_tdm_df$count, min.freq = 5,
+          max.words=100, random.order=FALSE)
+
+
+```
+
+As it can be seen through the frequency plot and word cloud, besides from woman and man, terms like world, work, sexual, object, feminine, mother, marriage, husband, etc. are at a high frequency. From this, it can be deferred that some main ideas or topics in the book could be the topic of marriage, the topic of their role and responsibilities as a mother and to her husband, the topic of being feminine, the topic of objectifying women.
+
+```{r, echo = FALSE}
+#Run the code.
+
+
+#Implementation details:
+
+#Summarizing a text and trying to make sense of the popular or trending topics by getting the top words with the most occurences and also creating a word cloud for visualization purposes.
+
+#Analysis of Angela Davis's text
+
+#Data Cleaning Steps
+davis <- Corpus(VectorSource(philosophy_data_feminism_davis$sentence_spacy))  #the vectorsource function treats each sentence as a document and from there, a corpus is created which is the collection of these documents/sentences.
+davis <- tm_map(davis, content_transformer(tolower)) #lowercase
+davis <- tm_map(davis, removeNumbers) #strip digits
+davis <- tm_map(davis, removeWords, stopwords("english")) #remove stop words
+
+#Custom stop word list - remove the terms in the list
+davis <- tm_map(davis, removeWords, c("one", "womens", "womans", "woman","female", "male", "like", "can", "must", 
+                                          "will", "make", "may", "the", "for", "and", "that", "are", 
+                                          "have", "which", "they", "for", "this", "thing", "their",
+                                          "our", "from", "all", "them", "his", "her",
+                                          "other", "these", 'their', "theirs", "who", "with",
+                                          "where", "why", "what", "more",
+                                          "because", "but", "would", "even", "without", "though",  
+                                          "also", "well", "still", "many", "thus", "said", "often", 
+                                          "just", "see", "much", "always", "less", "sometimes",
+                                          "every","become", "becomes", "sometimes", "two", "till", 
+                                          "let", "whilst", "yet", "might", "whose", "ever", "made", 
+                                          "little", "thy", "yesterday", "tuesday", "wednesday", 
+                                          "notwithstanding", "get", "monday"))
+davis <- tm_map(davis, removePunctuation) #remove punctuation
+davis <- tm_map(davis, stripWhitespace) #remove space
+davis <- tm_map(davis, stemDocument) #reduce words to root form
+
+
+#Same process as Wollstonecraft's. I found the top occurrences by first creating a matrix from the TermDocumentMatrix. Afterwards, I calculated the summation of the row values of the matrix which signify the amount of occurrence of the term in each document/sentence. Afterwards, I sorted those summation values in decreasing order and got the top 35 words with the most occurrences.
+davis_tdm <- TermDocumentMatrix(davis)
+davis_tdm_matrix <- as.matrix(davis_tdm)
+davis_tdm_matrix_rowsums <- rowSums(davis_tdm_matrix)
+davis_tdm_matrix_sorted <- sort(davis_tdm_matrix_rowsums, decreasing=TRUE)
+davis_tdm_df <- data.frame(term = names(davis_tdm_matrix_sorted),count=davis_tdm_matrix_sorted)
+
+#Histogram of the top 35 words with the most occurrences
+davis_tdm_df_35 <- head(davis_tdm_df, 35)
+ggplot(data = davis_tdm_df_35, 
+       aes(x = davis_tdm_df_35$term, 
+           y = davis_tdm_df_35$count)) +
+       geom_bar(stat='identity') + coord_flip() + theme_bw() + xlab("Frequency") + ylab("Term")
+
+#Word cloud for visualization purposes
+wordcloud(words = davis_tdm_df$term, freq = davis_tdm_df$count, min.freq = 5,
+          max.words=100, random.order=FALSE)
+
+```
+
+As it can be seen through the frequency plot and word cloud, besides from women, terms like white, black, work, slave, movement, suffrage, rape, labour, racism, oppress, campaign are at a high frequency. Some main ideas or topics in the book could be the topic of women's movement and campaigning for it, the topic of the suffering that women went through - rape, slavery, lynching, the topic of race and inequality (white vs. black women and men). 
+
+
+
+
+
+
+While the simple word frequency metric gave good, general ideas about each text, there are better approaches to understanding the context behind the words better, to understand even more about what the author was thinking while writing down this words. One approach would be topic modeling. Topic modeling looks at groups of words that often occurred together in documents (in this case, sentences), instead of counting each word individually. This approach helps in capturing the broader context of the text. If we can understand what ideas the groups represent based on the most popular terms, then we can be more definite about the main ideas talked about in the text.
+In this analysis, the LDA model using Gibbs sampling was used through the LDA function on each text individually to figure out the three topics/ideas for each text. When the model was created, there are some specific elements of interest - the beta values. Beta values basically show the probability of the word being associated in the topic. Since three topics are to be evaluated for each text - for each topic,the top 20 words with the highest beta probability are shown in a bar chart. The higher the beta value, the more frequent the term appears in the topic.
+
+
+```{r, include=FALSE}
+#Run the code. This could take some time since the some of the texts are huge and it will take time in the process of LDA modeling.
+
+
+#Topic Modeling
+
+#Analysis of Mary Wollstonecraft's text
+wollstone_themes <- Corpus(VectorSource(philosophy_data_feminism_wollstone$sentence_spacy)) #the vectorsource function treats each sentence as a document and from there, a corpus is created which is the collection of these documents/sentences
+wollstone_themes <- tm_map(wollstone_themes, content_transformer(tolower)) #lowercase
+wollstone_themes <- tm_map(wollstone_themes, removeNumbers) #strip digits
+wollstone_themes <- tm_map(wollstone_themes, removeWords, stopwords("english")) #remove stopwords
+wollstone_themes <- tm_map(wollstone_themes, removeWords, 
+                           c("one", "womens", "woman", "man","like", "can",  "must", "will", "make", 
+                             "may", "the", "for", "and", "that", "are", "have", "which", "they", "for", 
+                             "this", "thing", "their", "our", "from", "all", "them", "his", "her",
+                              "other", "these", 'their', "theirs", "who", "with","where", "why", "what", 
+                              "more", "because", "but", "would", "even", "without", "though",  
+                              "also", "well", "still", "many", "thus", "said", "often", "just", "see", 
+                              "much", "always", "less", "sometimes", "every","become", "becomes", 
+                              "sometimes", "two", "till","let", "whilst", "yet", "might", "whose", 
+                              "ever", "made", "little", "thy", "yesterday", "tuesday", "wednesday", 
+                              "notwithstanding", "get", "monday")) 
+wollstone_themes <- tm_map(wollstone_themes, removePunctuation) #remove punctuation
+wollstone_themes <- tm_map(wollstone_themes, stripWhitespace) #remove space
+wollstone_themes_dtm <- DocumentTermMatrix(wollstone_themes) #DocumentTermMatrix
+wollstone_themes_dtm_unique <- unique(wollstone_themes_dtm$i) #Was facing errors and this fixed it 
+wollstone_themes_dtm_final <- wollstone_themes_dtm[wollstone_themes_dtm_unique,]
+
+#Parameters
+burnin <- 4000
+thin <- 500
+nstart <- 5
+best <- TRUE
+iter <- 2000
+seed <- list(2003,5,63,100001,765)
+
+#Number of topics
+k <- 3
+
+#LDA function
+wollstone_ldaOut <-LDA(wollstone_themes_dtm_final, k, method="Gibbs", 
+                       control=list(nstart=nstart, seed = seed, best=best, burnin = burnin, iter = iter,
+                                    thin=thin))
+
+
+#This is for finding the top 20 terms with the highest beta values within each topic. Will help with visualization.
+wollstone_beta_topics <- tidy(wollstone_ldaOut, matrix = "beta")
+wollstone_beta_topics <- arrange(wollstone_beta_topics, desc(wollstone_beta_topics$beta))
+wollstone_beta_topics <- group_by(wollstone_beta_topics, wollstone_beta_topics$topic)
+wollstone_beta_topics_final <- slice(wollstone_beta_topics, 1:20)
+wollstone_beta_topics_final$term<-reorder_within (x=wollstone_beta_topics_final$term, 
+                                                  by = wollstone_beta_topics_final$beta, 
+                                                  within = wollstone_beta_topics_final$topic)
+
+
+
+
+#Same process as Wollstonecraft's used for the remaining two authors
+
+
+#Analysis of Simone de Beauvoir's text
+beauvoir_themes <- Corpus(VectorSource(philosophy_data_feminism_beauvoir$sentence_spacy)) #the vectorsource function treats each sentence as a document and from there, a corpus is created which is the collection of these documents/sentences
+beauvoir_themes <- tm_map(beauvoir_themes, content_transformer(tolower)) #lowercase
+beauvoir_themes <- tm_map(beauvoir_themes, removeNumbers) #strip digits
+beauvoir_themes <- tm_map(beauvoir_themes, removeWords, stopwords("english")) #remove stopwords
+
+#a custom stop word list - remove terms in the list
+beauvoir_themes <- tm_map(beauvoir_themes, removeWords, c("one", "womens", "womans", "women", "male", "female", "like", "can", "must", 
+                                          "will", "make", "may", "the", "for", "and", "that", "are", 
+                                          "have", "which", "they", "for", "this", "thing", "their",
+                                          "our", "from", "all", "them", "his", "her",
+                                          "other", "these", 'their', "theirs", "who", "with",
+                                          "where", "why", "what", "more",
+                                          "because", "but", "would", "even", "without", "though",  
+                                          "also", "well", "still", "many", "thus", "said", "often", 
+                                          "just", "see", "much", "always", "less", "sometimes",
+                                          "every","become", "becomes", "sometimes", "two", "till", 
+                                          "let", "whilst", "yet", "might", "whose", "ever", "made", 
+                                          "little", "thy", "yesterday", "tuesday", "wednesday", 
+                                          "notwithstanding", "get", "monday", "nothing")) 
+
+beauvoir_themes <- tm_map(beauvoir_themes, removePunctuation) #remove punctuation
+beauvoir_themes <- tm_map(beauvoir_themes, stripWhitespace) #remove space
+beauvoir_themes_dtm <- DocumentTermMatrix(beauvoir_themes) #Document Term Matrix
+#Was having errors with just proceeding with the original document term matrix. This fixed it.
+beauvoir_themes_dtm_unique <- unique(beauvoir_themes_dtm$i) 
+beauvoir_themes_dtm_final <- beauvoir_themes_dtm[beauvoir_themes_dtm_unique,]
+
+#Parameters
+burnin <- 4000
+thin <- 500
+nstart <- 5
+best <- TRUE
+iter <- 2000
+seed <- list(2003,5,63,100001,765)
+
+#Number of topics
+k <- 3
+
+#LDA model
+beauvoir_ldaOut <-LDA(beauvoir_themes_dtm_final, k, method="Gibbs", 
+                       control=list(nstart=nstart, seed = seed, best=best, burnin = burnin, iter = iter,
+                                    thin=thin))
+
+#This is for finding the top 20 terms with the highest beta values within each topic. Will help with visualization.
+beauvoir_beta_topics <- tidy(beauvoir_ldaOut, matrix = "beta")
+beauvoir_beta_topics <- arrange(beauvoir_beta_topics, desc(beauvoir_beta_topics$beta))
+beauvoir_beta_topics <- group_by(beauvoir_beta_topics, beauvoir_beta_topics$topic)
+beauvoir_beta_topics_final <- slice(beauvoir_beta_topics, 1:20)
+beauvoir_beta_topics_final$term<-reorder_within (x=beauvoir_beta_topics_final$term, 
+                                                  by = beauvoir_beta_topics_final$beta, 
+                                                  within = beauvoir_beta_topics_final$topic)
+
+
+#Analysis of Angela Davis's text
+davis_themes <- Corpus(VectorSource(philosophy_data_feminism_davis$sentence_spacy)) #the vectorsource function treats each sentence as a document and from there, a corpus is created which is the collection of these documents/sentences
+davis_themes <- tm_map(davis_themes, content_transformer(tolower)) #lowercase
+davis_themes <- tm_map(davis_themes, removeNumbers) #strip digits
+davis_themes <- tm_map(davis_themes, removeWords, stopwords("english")) #remove stopwords
+#remove words from custom stopword list
+davis_themes <- tm_map(davis_themes, removeWords, c("one", "womens", "womans", "woman","female", "male", "like", "can", "must", 
+                                          "will", "make", "may", "the", "for", "and", "that", "are", 
+                                          "have", "which", "they", "for", "this", "thing", "their",
+                                          "our", "from", "all", "them", "his", "her",
+                                          "other", "these", 'their', "theirs", "who", "with",
+                                          "where", "why", "what", "more",
+                                          "because", "but", "would", "even", "without", "though",  
+                                          "also", "well", "still", "many", "thus", "said", "often", 
+                                          "just", "see", "much", "always", "less", "sometimes",
+                                          "every","become", "becomes", "sometimes", "two", "till", 
+                                          "let", "whilst", "yet", "might", "whose", "ever", "made", 
+                                          "little", "thy", "yesterday", "tuesday", "wednesday", 
+                                          "notwithstanding", "get", "monday"))
+davis_themes <- tm_map(davis_themes, removePunctuation) #remove punctuation
+davis_themes <- tm_map(davis_themes, stripWhitespace) #remove space
+davis_themes_dtm <- DocumentTermMatrix(davis_themes) #Document Term Matrix
+#Was having errors with just proceeding with the original document term matrix. This fixed it.
+davis_themes_dtm_unique <- unique(davis_themes_dtm$i)
+davis_themes_dtm_final <- davis_themes_dtm[davis_themes_dtm_unique,]
+
+#Parameters
+burnin <- 4000
+thin <- 500
+nstart <- 5
+best <- TRUE
+iter <- 2000
+seed <- list(2003,5,63,100001,765)
+
+#Number of topics
+k <- 3
+
+#LDA function
+davis_ldaOut <-LDA(davis_themes_dtm_final, k, method="Gibbs", 
+                       control=list(nstart=nstart, seed = seed, best=best, burnin = burnin, iter = iter,
+                                    thin=thin))
+
+##This is for finding the top 20 terms with the highest beta values within each topic. Will help with visualization.
+davis_beta_topics <- tidy(davis_ldaOut, matrix = "beta")
+davis_beta_topics <- arrange(davis_beta_topics, desc(davis_beta_topics$beta))
+davis_beta_topics <- group_by(davis_beta_topics, davis_beta_topics$topic)
+davis_beta_topics_final<- slice(davis_beta_topics, 1:20)
+davis_beta_topics_final$term<-reorder_within (x=davis_beta_topics_final$term, 
+                                                  by = davis_beta_topics_final$beta, 
+                                                  within = davis_beta_topics_final$topic)
+
+
+
+```
+```{r, echo=FALSE}
+#Run the code.
+
+#For each text, plots showing the terms and the beta value in each topic
+
+ggplot(data = wollstone_beta_topics_final, aes(x = beta, y = term, fill = factor(topic))) + 
+  geom_col(show.legend = FALSE) + 
+  facet_wrap(~topic, scales = "free") + 
+  scale_y_reordered() +
+  ggtitle("Mary Wollstonecraft's Topic Modeling Analysis")
+
+
+```
+Looking at Mary Wollstonecraft's topic modeling results, the third topic has women, men, children with the highest beta probabilities which means that in this topic, these words occurred the most. Following that, words like society, duties, allowed, respect, power occur. Hence, like mentioned in the discussion regarding the word frequency plot and word cloud for this author, a general topic would be of the role and responsibilities of women towards her children, towards her husband. In the second topic, words like reason, life, education, virtue occur the most. Words like weakness, beauty, occur too. This could be highlighting the importance of education and virtue so to not seem as a weakness and that the focus should not be just on beauty instead. The topic of education was also mentioned in my discussion of the word frequency plot and word cloud. In the first topic, mind, love, character, heart, affection, virtue are the top words with the highest beta values. Followed are the terms like strength, necessary, nature, etc. The topic could be on developing morals and great virtues, character. 
+
+```{r, echo=FALSE}
+#Run the code.
+
+#For each text, plots showing the terms and the beta value in each topic
+
+ggplot(data = beauvoir_beta_topics_final, aes(x = beta, y = term, fill = factor(topic))) + 
+  geom_col(show.legend = FALSE) + 
+  facet_wrap(~topic, scales = "free") + 
+  scale_y_reordered() +
+  ggtitle("Simone de Beauvoir's Topic Modeling Analysis")
+
+```
+
+Looking at Simone de Beauvoir's topic modeling results, the third topic has life, men, marriage, world as the top words with the highest beta probabilities. These words occur the most in the topic. Followed are terms like existence, society, role, family, etc. This could be highlighting what the role of a female, her existence is - her world is her marriage, her family, etc. This was mentioned in my discussion regarding the word frequency plot and word cloud as well. Looking at the second topic, words like man, woman, love exists the most in the topic. Followed are terms like body, pleasure, flesh, object, desire. The topic could be what women could be perceived or objectified as - as an object for pleasure, desire, etc. This was also mentioned in my discussion regarding the word frequency plot and word cloud. The first topic has words like mother, girl, husband occur the most in the topic. Followed are terms like day, home, children, first. An idea in the text could be of the routine of the female - staying at home all day, child is her first priority, etc. 
+
+
+```{r, echo=FALSE}
+#Run the code.
+
+#For each text, plots showing the terms and the beta value in each topic
+
+ggplot(data = davis_beta_topics_final, aes(x = beta, y = term, fill = factor(topic))) + 
+  geom_col(show.legend = FALSE) + 
+  facet_wrap(~topic, scales = "free") + 
+  scale_y_reordered() +
+  ggtitle("Angela Davis's Topic Modeling Analysis")
+
+```
+
+
+Looking at Angela Davis's topic modeling results, the third topic has womens, movement, rights, suffrage as the top words with the highest beta probabilities. These words occur the most in the topic. Followed are terms like anti, racism, douglass, campaign, etc. This could be highlighting new changes for female - women's movement regarding their rights, suffrage, campaign against anti- racism. It also mentions the term douglass, which I believe refers to Frederick Douglass who was one of the prominent advocates of women's rights in the nineteenth century. This topic was mentioned in my discussion regarding the word frequency plot and word cloud too. Looking at the second topic, words like women, black, white exists the most in the topic. Followed are terms like men, slavery, class, rape, struggle. The topic could be the inequality in class and race (white vs. black) and the suffering that women went through. This was also mentioned in my discussion regarding the word frequency plot and word cloud. The first topic has words like slave, work, children, negro, man occur the most in the topic. Followed are terms like war, race, slaves. An idea in the text could be of the exploitation of children and men of black african ancestry as slaves, for war, for labor, etc. 
+
+To conclude the analysis, it makes sense now as to why the margin between negative and positive sentiments is so low in Davis's text. It is because such serious topics were discussed - regarding inequality in class and race, regarding the many types of suffering the women went through like rape, racism, oppression. However, since the margin was low, this also means there were a series of topics expressing positive sentiments (anticipation and trust) which there were - women's movement regarding their rights, discussion regarding Frederick Douglass, suffrage, campaigning, etc. On the other hand, Wollstonecraft expressed positive sentiments by a huge margin, compared to other authors. This could be because it might have been a text to educate women on the importance of education and how it can serve women well. There's a difference there. 
+
+
+Another insightful question to explore was regarding finding what the opinion of females in other schools were - how were they perceived as, were they seen in a negative manner or were they respected? To get a broader context regarding females in other schools, I used a function called findAssocs. This helps in finding associations between terms - so when the text discusses females, what are the other terms used? For any given word, this function calculates the correlation with every word in the term document matrix or document term matrix. Though, the function is done at document level. For every document that contains the word asked for, the other terms in those same documents are associated. Documents that don't have the word are ignored. In this case, a document is each sentence of all texts from a school. I want to find the broader context when the term, female or woman or women, etc. is present in a sentence so finding good associations in the same document or sentence is what I am looking for. Documents or sentences that don't contain the term, female or women, etc. are simply ignored which is fine. The scores range from 0 to 1. A score of 1 means that the two words always appear together in a document/sentence. A score near 0 means that the words do not really appear together in a document/sentence.  
+
+I tried this function for all schools where the terms to search for were: female, male, man, woman, girl and boy. The correlation/association between the mentioned terms above and other terms in the document/sentence has to be more than 0.2. Not all the associations between each mentioned term above and every other word is shown here as there were many that did not result in anything insightful. Also, not all schools are mentioned due to the same reason. For instance, the texts from the schools, Plato and Aristotle, did not have anything related to females, women, woman, etc. So, only the interesting and insightful associations are mentioned down below. 
+
+To know more about the detailed steps, please do take the time to read the comments in the code which is in the RMD file.
+```{r, echo =FALSE}
+
+#Rationalism
+#Create a subset related to rationalism
+philosophy_data_category<- philosophy_data[philosophy_data$school== "rationalism",]
+philosophy_data_category <- Corpus(VectorSource(philosophy_data_category$sentence_spacy)) #the vectorsource function treats each sentence as a document and from there, a corpus is created which is the collection of these documents/sentences
+philosophy_data_category <- tm_map(philosophy_data_category, content_transformer(tolower)) #lowercase
+philosophy_data_category <- tm_map(philosophy_data_category, removeNumbers) #strip digits
+philosophy_data_category <- tm_map(philosophy_data_category, removeWords, stopwords("english")) #remove stopwords
+#Created custom stop word list - remove those terms
+philosophy_data_category <- tm_map(philosophy_data_category, removeWords, c("one", "womens", "like", 
+                                                                                  "can", "must", 
+                                                                                  "will", "make", "may", "the", "for", "and", "that", "are", 
+                                                                                  "have", "which", "they", "for", "this", "thing", "their",
+                                                                                  "our", "from", "all", "them", "his", "her",
+                                                                                  "other", "these", 'their', "theirs", "who", "with",
+                                                                                  "where", "why", "what", "more",
+                                                                                  "because", "but", "would", "even", "without", "though",  
+                                                                                  "also", "well", "still", "many", "thus", "said", "often", 
+                                                                                  "just", "see", "much", "always", "less", "sometimes",
+                                                                                  "every","become", "becomes", "sometimes", "two", "till", 
+                                                                                  "let", "whilst", "yet", "might", "whose", "ever", "made", 
+                                                                                  "little", "thy", "yesterday", "tuesday", "wednesday", 
+                                                                                  "notwithstanding", "get", "monday")) 
+philosophy_data_category <- tm_map(philosophy_data_category, removePunctuation) #remove punctuation
+philosophy_data_category <- tm_map(philosophy_data_category, stripWhitespace) #remove space
+#philosophy_data_category <- tm_map(philosophy_data_category, stemDocument)
+philosophy_data_category_dtm <- TermDocumentMatrix(philosophy_data_category) #Term Document Matrix
+
+
+
+#Apply function on term Document Matrix with the search term being women and the correlation limit being 0.2. It will find associations between woman and the other terms in each document/sentence, as long, as the correlation is above the limit.
+
+women <- data.frame(findAssocs(philosophy_data_category_dtm, "women", 0.2))
+
+women %>% rownames_to_column() %>% ggplot(aes(x=reorder(rowname,women), y=women)) + geom_point(size=5) + coord_flip() + ylab('Correlation') + xlab('Term') + ggtitle("Terms correlated with the term, women, in the School of Rationalism")
+
+
+```
+In the school of rationalism, when the text discussed "women", then other terms associated were like accomplishing, courageous which is quite surprising. It was quite interesting to see good connotations being associated with women and that too at high correlations (e.g. accomplishing having a correlation of more than 0.35). 
+
+```{r, echo=FALSE}
+#Same process as school of rationalism for all of the schools
+
+#Empiricism
+philosophy_data_category<- philosophy_data[philosophy_data$school== "empiricism",]
+philosophy_data_category <- Corpus(VectorSource(philosophy_data_category$sentence_spacy))
+philosophy_data_category <- tm_map(philosophy_data_category, content_transformer(tolower))
+philosophy_data_category <- tm_map(philosophy_data_category, removeNumbers)
+philosophy_data_category <- tm_map(philosophy_data_category, removeWords, stopwords("english"))
+philosophy_data_category <- tm_map(philosophy_data_category, removeWords, c("one", "womens", "like", 
+                                                                            "can", "must", 
+                                                                            "will", "make", "may", "the", "for", "and", "that", "are", 
+                                                                            "have", "which", "they", "for", "this", "thing", "their",
+                                                                            "our", "from", "all", "them", "his", "her",
+                                                                            "other", "these", 'their', "theirs", "who", "with",
+                                                                            "where", "why", "what", "more",
+                                                                            "because", "but", "would", "even", "without", "though",  
+                                                                            "also", "well", "still", "many", "thus", "said", "often", 
+                                                                            "just", "see", "much", "always", "less", "sometimes",
+                                                                            "every","become", "becomes", "sometimes", "two", "till", 
+                                                                            "let", "whilst", "yet", "might", "whose", "ever", "made", 
+                                                                            "little", "thy", "yesterday", "tuesday", "wednesday", 
+                                                                            "notwithstanding", "get", "monday")) 
+philosophy_data_category <- tm_map(philosophy_data_category, removePunctuation)
+philosophy_data_category <- tm_map(philosophy_data_category, stripWhitespace)
+#philosophy_data_category <- tm_map(philosophy_data_category, stemDocument)
+philosophy_data_category_dtm <- TermDocumentMatrix(philosophy_data_category)
+
+female <- data.frame(findAssocs(philosophy_data_category_dtm, "female", 0.2))
+female %>% rownames_to_column() %>% ggplot(aes(x=reorder(rowname,female), y=female)) + geom_point(size=5) + coord_flip() + ylab('Correlation') + xlab('Term') + ggtitle("Terms correlated with the term, female, in the School of Empiricism")
+
+```
+
+In the school of empiricism, the words associated with female are viparious (definition is producing living young), begets (definition is reproduction), procreation, sustenance (definition is nourishment), etc. So, females here were associated with conceiving a child and nurturing them. This gives a broader context as to the role of women and the opinion of them from the texts in the school of empiricism. 
+
+
+
+```{r, echo=FALSE}
+#Phenomenology
+philosophy_data_category<- philosophy_data[philosophy_data$school== "phenomenology",]
+philosophy_data_category <- Corpus(VectorSource(philosophy_data_category$sentence_spacy))
+philosophy_data_category <- tm_map(philosophy_data_category, content_transformer(tolower))
+philosophy_data_category <- tm_map(philosophy_data_category, removeNumbers)
+philosophy_data_category <- tm_map(philosophy_data_category, removeWords, stopwords("english"))
+philosophy_data_category <- tm_map(philosophy_data_category, removeWords, c("one", "womens", "like", 
+                                                                            "can", "must", 
+                                                                            "will", "make", "may", "the", "for", "and", "that", "are", 
+                                                                            "have", "which", "they", "for", "this", "thing", "their",
+                                                                            "our", "from", "all", "them", "his", "her",
+                                                                            "other", "these", 'their', "theirs", "who", "with",
+                                                                            "where", "why", "what", "more",
+                                                                            "because", "but", "would", "even", "without", "though",  
+                                                                            "also", "well", "still", "many", "thus", "said", "often", 
+                                                                            "just", "see", "much", "always", "less", "sometimes",
+                                                                            "every","become", "becomes", "sometimes", "two", "till", 
+                                                                            "let", "whilst", "yet", "might", "whose", "ever", "made", 
+                                                                            "little", "thy", "yesterday", "tuesday", "wednesday", 
+                                                                            "notwithstanding", "get", "monday")) 
+philosophy_data_category <- tm_map(philosophy_data_category, removePunctuation)
+philosophy_data_category <- tm_map(philosophy_data_category, stripWhitespace)
+philosophy_data_category_dtm <- TermDocumentMatrix(philosophy_data_category)
+
+woman <- data.frame(findAssocs(philosophy_data_category_dtm, "woman", 0.2))
+woman %>% rownames_to_column() %>% ggplot(aes(x=reorder(rowname,woman), y=woman)) + geom_point(size=5) + coord_flip() + ylab('Correlation') + xlab('Term') + ggtitle("Terms correlated with the term, woman, in the School of Phenomenology")
+
+```
+
+In the school of phenomenology, the words associated with female are peasant, toilet, senile. The highest correlation was to do with peasant. Again, compared to the other schools, this association is quite different with women. 
+
+
+
+
+```{r, echo = FALSE}
+#Capitalism
+philosophy_data_category<- philosophy_data[philosophy_data$school== "capitalism",]
+philosophy_data_category <- Corpus(VectorSource(philosophy_data_category$sentence_spacy))
+philosophy_data_category <- tm_map(philosophy_data_category, content_transformer(tolower))
+philosophy_data_category <- tm_map(philosophy_data_category, removeNumbers)
+philosophy_data_category <- tm_map(philosophy_data_category, removeWords, stopwords("english"))
+philosophy_data_category <- tm_map(philosophy_data_category, removeWords, c("one", "womens", "like", 
+                                                                            "can", "must", 
+                                                                            "will", "make", "may", "the", "for", "and", "that", "are", 
+                                                                            "have", "which", "they", "for", "this", "thing", "their",
+                                                                            "our", "from", "all", "them", "his", "her",
+                                                                            "other", "these", 'their', "theirs", "who", "with",
+                                                                            "where", "why", "what", "more",
+                                                                            "because", "but", "would", "even", "without", "though",  
+                                                                            "also", "well", "still", "many", "thus", "said", "often", 
+                                                                            "just", "see", "much", "always", "less", "sometimes",
+                                                                            "every","become", "becomes", "sometimes", "two", "till", 
+                                                                            "let", "whilst", "yet", "might", "whose", "ever", "made", 
+                                                                            "little", "thy", "yesterday", "tuesday", "wednesday", 
+                                                                            "notwithstanding", "get", "monday")) 
+philosophy_data_category <- tm_map(philosophy_data_category, removePunctuation)
+philosophy_data_category <- tm_map(philosophy_data_category, stripWhitespace)
+philosophy_data_category_dtm <- TermDocumentMatrix(philosophy_data_category)
+
+
+women <- data.frame(findAssocs(philosophy_data_category_dtm, "women", 0.2))
+
+women %>% rownames_to_column() %>% ggplot(aes(x=reorder(rowname,women), y=women)) + geom_point(size=5) + coord_flip() + ylab('Correlation') + xlab('Term')+ ggtitle("Terms correlated with the term, women, in the School of Capitalism")
+
+
+```
+The strongest associations here with the term, woman, has to be warriors and porters. This is followed by the terms strongest, prostitution, chairmen, heavers (definition is a person employed to carry luggage or other loads), children. This gives a broader context from texts as here it seems the texts discussed as to what a woman did to earn a living.
+
+
+```{r, echo = FALSE}
+#Stoicism
+philosophy_data_category<- philosophy_data[philosophy_data$school== "stoicism",]
+philosophy_data_category <- Corpus(VectorSource(philosophy_data_category$sentence_spacy))
+philosophy_data_category <- tm_map(philosophy_data_category, content_transformer(tolower))
+philosophy_data_category <- tm_map(philosophy_data_category, removeNumbers)
+philosophy_data_category <- tm_map(philosophy_data_category, removeWords, stopwords("english"))
+philosophy_data_category <- tm_map(philosophy_data_category, removeWords, c("one", "womens", "like", 
+                                                                            "can", "must", 
+                                                                            "will", "make", "may", "the", "for", "and", "that", "are", 
+                                                                            "have", "which", "they", "for", "this", "thing", "their",
+                                                                            "our", "from", "all", "them", "his", "her",
+                                                                            "other", "these", 'their', "theirs", "who", "with",
+                                                                            "where", "why", "what", "more",
+                                                                            "because", "but", "would", "even", "without", "though",  
+                                                                            "also", "well", "still", "many", "thus", "said", "often", 
+                                                                            "just", "see", "much", "always", "less", "sometimes",
+                                                                            "every","become", "becomes", "sometimes", "two", "till", 
+                                                                            "let", "whilst", "yet", "might", "whose", "ever", "made", 
+                                                                            "little", "thy", "yesterday", "tuesday", "wednesday", 
+                                                                            "notwithstanding", "get", "monday")) 
+philosophy_data_category <- tm_map(philosophy_data_category, removePunctuation)
+philosophy_data_category <- tm_map(philosophy_data_category, stripWhitespace)
+philosophy_data_category_dtm <- TermDocumentMatrix(philosophy_data_category)
+
+
+women <- data.frame(findAssocs(philosophy_data_category_dtm, "women", 0.2))
+women %>% rownames_to_column() %>% ggplot(aes(x=reorder(rowname,women), y=women)) + geom_point(size=5) + coord_flip() + ylab('Correlation') + xlab('Term') + ggtitle("Terms correlated with the term, women, in the School of Stoicism")
+
+```
+The strongest associations with the term, women, has to be mistresses and marriage. This is followed by the terms intercourse, uncharitable, old. This gives a broader context as to how women were perceived as objects in the texts from the school of stoicism. 
+
+
+To conclude this analysis, different schools looked at females in different ways. Some schools like the school of rationalism associated with women with terms like courageous and accomplishing. Some schools like empiricism looked at women as people who took care of children and conceived them. So, different schools saw females in different ways. 
+
+
+In conclusion, the role of females back then was generally to take care of their family, their marriage. The issues or concerns back then were slavery, oppression, rape, being seen and treated as objects, class inequality, etc. In Mary Wollstonecraft’s text which was written in 1792, she discussed about how education is important which would serve females well in all areas of life. In Beauvoir’s text written in 1942, she discussed about the state of women - that the priority of females should be marriage, family, kids, that women were seen as flesh/objects of desire. In Davis’s text which was written in 1982, she discussed the oppression against women - rape, slavery, using them for labor, inequality in class and race. She also discussed about women’s movement for factors like human rights, suffrage, anti-racism and discussed examples like Frederick Douglass who were prominent advocates for feminism. The feminism movement back then was about access to basic human rights, access to education, was regarding sufferage, etc. Even though, with time, the topics of the feminism movement have changed, the core of it remains the same - to give them the same opportunities as everyone else and to treat them like everyone else.
+
