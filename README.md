@@ -15,7 +15,7 @@ Term: Fall 2022
 
 This folder is organized as follows.
 
-Doc contains - the main notebook and the corresponding PDF file (the report). Please read the comments in the code which is in the RMD file. If there are any errors that occur, it is most probably written in the comments as to what to do. There might be some installation of packages needed. You will have to be set the working directory or put the path directory to where the data set is on line 26. The subsets of the data can be created within the RMD file. Hence, I didn't put any processed data in the output folder.
+Doc contains - the main notebook and the corresponding PDF file (the report). Please read the comments in the code which is in the RMD file. If there are any errors that occur, it is most probably written in the comments as to what to do. There might be some installation of packages needed. You will have to set the working directory or put the path directory to where the data set is on line 26. The subsets of the data can be created within the RMD file. Hence, I didn't put any processed data in the output folder.
 
 
 ```
